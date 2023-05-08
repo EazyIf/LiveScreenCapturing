@@ -6,6 +6,7 @@ in the cmd pointing to the path of the directory where the `requirements.txt` is
 
 For running the .ipnb files in Visual Studio Code you may want to install these two extensions:
 <br />
-1] https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter-renderers
+1] <a href="[url](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter-renderers)">link text</a>
 <br />
-2] https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter
+2] <a href="[url](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter)">link text</a>
+

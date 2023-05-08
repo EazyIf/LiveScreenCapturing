@@ -9,9 +9,9 @@ host_ip = socket.gethostbyname(host_name)
 print('HOST IP:',host_ip)
 port = 9999
 socket_address = (host_ip,port)
-server_socket.bind((host_ip, port))
+server_socket.bind(socket_address)
 server_socket.listen(5)
-print("LISTENING AT:", (host_ip, port))
+print("LISTENING AT:", socket_address)
 
 client_socket, addr = server_socket.accept()
 print('GOT CONNECTION FROM:', addr)

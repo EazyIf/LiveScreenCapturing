@@ -5,3 +5,4 @@ mss==9.0.1
 Pillow==9.4.0
 numpy==1.23.5
 imutils==0.5.4
+ray==2.4.0

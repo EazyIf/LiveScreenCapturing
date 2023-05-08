@@ -1,4 +1,7 @@
-import socket,cv2, pickle,struct
+import socket
+import cv2
+import pickle
+import struct
 from mss import mss
 from PIL import Image
 import numpy as np
@@ -8,19 +11,19 @@ user32 = ctypes.windll.user32
 win_x, win_y = [user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)] 
 win_cnt_x, win_cnt_y = [user32.GetSystemMetrics(0)/2, user32.GetSystemMetrics(1)/2]
 
-# create socket
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host_ip = '192.168.1.126' # paste your server ip address here
+host_ip = '' #paste your server ip address here
 port = 9999
-client_socket.connect((host_ip,port)) # a tuple
+client_socket.connect((host_ip,port))
+
 data = b""
 packed_data = struct.pack("ii", win_x, win_y)
 client_socket.sendall(packed_data)
-
 payload_size = struct.calcsize("Q")
+
 while True:
 	while len(data) < payload_size:
-		packet = client_socket.recv(4*1024) # 4K
+		packet = client_socket.recv(4*1024)
 		if not packet: break
 		data+=packet
 	packed_msg_size = data[:payload_size]

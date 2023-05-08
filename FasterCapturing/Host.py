@@ -4,8 +4,11 @@ import numpy as np
 import pyautogui
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host_ip = '192.168.1.120' # Paste your server IP address here
+host_name  = socket.gethostname()
+host_ip = socket.gethostbyname(host_name)
+print('HOST IP:',host_ip)
 port = 9999
+socket_address = (host_ip,port)
 server_socket.bind((host_ip, port))
 server_socket.listen(5)
 print("LISTENING AT:", (host_ip, port))

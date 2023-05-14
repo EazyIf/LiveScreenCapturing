@@ -2,11 +2,13 @@ import socket
 import cv2
 import numpy as np
 import pyautogui
+import zlib
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host_ip = '192.168.1.120' # Paste your server IP address here
+host_ip = '192.168.1.126'  # Paste your server IP address here
 port = 9999
 client_socket.connect((host_ip, port))
+
 screen_width, screen_height = pyautogui.size()
 frame_size = (screen_width, screen_height)
 frame_size = 0
@@ -24,13 +26,14 @@ while True:
             break
         frame_data += data
 
-    frame = np.frombuffer(frame_data, dtype=np.uint8).reshape((screen_height, screen_width, 3))
+    decompressed_frame = zlib.decompress(frame_data)
+    frame = np.frombuffer(decompressed_frame, dtype=np.uint8).reshape((screen_height, screen_width, 3))
     cv2.namedWindow("RECEIVING VIDEO", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("RECEIVING VIDEO", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     cv2.imshow("RECEIVING VIDEO", frame)
     frame_data = b""
     if cv2.waitKey(1) == ord('q'):
         break
-    
+
 cv2.destroyAllWindows()
 client_socket.close()

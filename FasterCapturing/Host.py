@@ -2,13 +2,14 @@ import socket
 import cv2
 import numpy as np
 import pyautogui
+import zlib
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host_name  = socket.gethostname()
+host_name = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
-print('HOST IP:',host_ip)
+print('HOST IP:', host_ip)
 port = 9999
-socket_address = (host_ip,port)
+socket_address = (host_ip, port)
 server_socket.bind(socket_address)
 server_socket.listen(5)
 print("LISTENING AT:", socket_address)
@@ -30,8 +31,10 @@ while True:
     out.write(frame)
 
     encoded_frame = frame.tobytes()
-    frame_size = len(encoded_frame)
-    client_socket.sendall(frame_size.to_bytes(4, 'big') + encoded_frame)
+    compressed_frame = zlib.compress(encoded_frame)
+
+    frame_size = len(compressed_frame)
+    client_socket.sendall(frame_size.to_bytes(4, 'big') + compressed_frame)
     if cv2.waitKey(1) == ord('q'):
         break
 

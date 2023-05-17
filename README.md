@@ -8,7 +8,7 @@ For running the .ipnb files in Visual Studio Code you may want to install these 
 1) <a href="https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter" target="_blank">Jupyter</a> <br />
 2) <a href="https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter-renderers" target="_blank">Jupyter Notebook Renderers</a> 
 
-#TODO:
+# TODO:
 - [ ] Make the mouse scroll work https://github.com/EazyIf/LiveScreenCapturing/issues/1
 - [ ] The screen capturing and the mouse controller not running as clean as it should https://github.com/EazyIf/LiveScreenCapturing/issues/2
 - [ ] Find a better way to run the hosts and the clients together 

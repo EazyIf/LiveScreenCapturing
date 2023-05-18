@@ -10,5 +10,6 @@ For running the .ipnb files in Visual Studio Code you may want to install these 
 
 # TODO:
 - [x] Make the mouse scroll work https://github.com/EazyIf/LiveScreenCapturing/issues/1
-- [ ] The screen capturing and the mouse controller not running as clean as it should https://github.com/EazyIf/LiveScreenCapturing/issues/2
+- [x]  the mouse controller not running as clean as it should https://github.com/EazyIf/LiveScreenCapturing/issues/2
+- [ ] The screen capturing not running as clean as it should https://github.com/EazyIf/LiveScreenCapturing/issues/3
 - [ ] Find a better way to run the hosts and the clients together 

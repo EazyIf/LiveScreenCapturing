@@ -1,40 +1,38 @@
 import socket
-from pynput.mouse import Controller, Listener
+from pynput.mouse import Listener, Controller
 import pyautogui
+import time
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = ('192.168.1.120', 9999)
 client_socket.connect(server_address)
 
-screen_width, screen_height = pyautogui.size()
-middle_x = screen_width // 2
-middle_y = screen_height // 2
+screenW, screenH = pyautogui.size()
+midX = screenW // 2
+midY = screenH // 2
+
 mouse = Controller()
-mouse.position = (middle_x, middle_y)
+mouse.position = (midX,midY)
 
-def send_event(event):
-    client_socket.send(event.encode())
+def MouseMove(x, y):
+    time.sleep(0.04) # you may want to change it to a lower or higher sleep time
+    '''
+    for a lower time.sleep you will lose a lot more data but it will run faster
+    for a higher time.sleep you will lose less data but it will run slower
+    so it's realy depends on your own free will
+    '''
+    client_socket.send(f'{x},{y}'.encode())
 
-def on_mouse_event(x, y, button, pressed):
-    if pressed:
-        event = f"PRESS {button} {x} {y}"
-        send_event(event)
+def MouseScroll(x, y, button, press):
+    client_socket.send(f'scroll.{press}'.encode())
+
+def MouseClick(x, y, button, press):
+    if press:
+        client_socket.send(f'press.{button}'.encode())
+
     else:
-        event = f"RELEASE {button} {x} {y}"
-        send_event(event)
-listener = Listener(on_click=on_mouse_event)
+        client_socket.send(f'release.{button}'.encode())
+
+listener = Listener(on_click=MouseClick,on_scroll=MouseScroll,on_move=MouseMove)
 listener.start()
-prev_x, prev_y = mouse.position
-
-try:
-    while True:
-        x, y = mouse.position
-
-        if x != prev_x or y != prev_y:
-            event = f"MOVE {x} {y}"
-            send_event(event)
-            prev_x, prev_y = x, y
-except KeyboardInterrupt:
-    listener.stop()
-
-client_socket.close()
+listener.join()

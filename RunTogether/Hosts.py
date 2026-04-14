@@ -63,8 +63,12 @@ def HostScreenCapturing():
     sock.bind((host_ip, 9999))
     print("Screen capture (UDP) waiting for client on port 9999...")
 
-    data, client_addr = sock.recvfrom(1024)
-    print(f"Screen client connected from: {client_addr}")
+    while True:
+        data, client_addr = sock.recvfrom(1024)
+        if data == b"hello":
+            print(f"Screen client connected from: {client_addr}")
+            break
+        print(f"Ignored unknown packet from {client_addr}: {data!r}")
 
     sct = mss()
     monitor = sct.monitors[1]

@@ -34,8 +34,12 @@ def main():
     print(f"Waiting for client on port {UDP_PORT}...")
 
     # Client sends a "hello" packet to register its address
-    data, client_addr = sock.recvfrom(1024)
-    print(f"Client connected from: {client_addr}")
+    while True:
+        data, client_addr = sock.recvfrom(1024)
+        if data == b"hello":
+            print(f"Client connected from: {client_addr}")
+            break
+        print(f"Ignored unknown packet from {client_addr}: {data!r}")
 
     # Send screen dimensions so client knows the resolution
     sct = mss()

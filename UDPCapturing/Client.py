@@ -4,7 +4,7 @@ import numpy as np
 import struct
 
 # ── Configuration ──────────────────────────────────────────────────
-HOST_IP = "192.168.1.126"   # Paste your server IP address here
+HOST_IP = "192.168.50.13"   # Paste your server IP address here
 UDP_PORT = 9999
 BUFFER_SIZE = 65535          # Max UDP datagram size
 # ───────────────────────────────────────────────────────────────────

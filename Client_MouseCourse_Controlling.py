@@ -4,7 +4,7 @@ import pyautogui
 import time
  
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_address = ('192.168.108.99', 9999)
+server_address = ('192.168.50.13', 9999)
 client_socket.connect(server_address)
  
 screenW, screenH = pyautogui.size()

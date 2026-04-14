@@ -1,12 +1,22 @@
 import socket
 from pynput.keyboard import Key, Controller
-import keyboard
+
+
+def get_local_ip():
+    """Get LAN IP address (works on both Windows and Linux)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return socket.gethostbyname(socket.gethostname())
 
 
 keyboard = Controller()
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-HostName = socket.gethostname()
-IP = socket.gethostbyname(HostName)
+IP = get_local_ip()
 PORT = 1223
 sock.bind((IP, PORT))
 sock.listen(3)

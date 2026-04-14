@@ -18,7 +18,7 @@ ray.init()
 @ray.remote
 def ClientKeyboard():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    IP = '192.168.50.13'
+    IP = '192.168.50.231'
     PORT = 1223
     client_socket.connect((IP, PORT))
 
@@ -68,7 +68,7 @@ def ClientKeyboard():
 
 @ray.remote
 def ClientScreenCapturing():
-    HOST_IP = '192.168.50.13'  # Paste your server IP address here
+    HOST_IP = '192.168.50.231'  # Paste your server IP address here
     BUFFER_SIZE = 65535
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -132,7 +132,7 @@ def ClientScreenCapturing():
 def ClientMouseCourseControlling():
     from pynput.mouse import Controller, Listener
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('192.168.50.13', 9922)
+    server_address = ('192.168.50.231', 9922)
     client_socket.connect(server_address)
     
     screen_width, screen_height = pyautogui.size()

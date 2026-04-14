@@ -5,7 +5,7 @@ import pyautogui
 import zlib
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host_ip = '192.168.50.13'  # Paste your server IP address here
+host_ip = '192.168.50.231'  # Paste your server IP address here
 port = 9999
 client_socket.connect((host_ip, port))
 

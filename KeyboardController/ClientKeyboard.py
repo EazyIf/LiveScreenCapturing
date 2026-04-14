@@ -10,7 +10,7 @@ if IS_WINDOWS:
 
 class Client:
     def __init__(self):
-        self.IP = '192.168.50.13'
+        self.IP = '192.168.50.231'
         self.PORT = 1223
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 

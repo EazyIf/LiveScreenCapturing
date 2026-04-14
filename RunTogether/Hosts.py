@@ -4,11 +4,8 @@ import numpy as np
 from mss import mss
 import pyautogui
 from threading import Thread
-import ray
 import struct
 import time
-
-ray.init()
 
 
 def get_local_ip():
@@ -24,9 +21,9 @@ def get_local_ip():
 
 
 host_ip = get_local_ip()
-print(f"[*] Listening as {host_ip} : 1223,|:|, 9999 (UDP)|:|, 9922")
+print(f"[*] Listening as {host_ip} : 1223 | 9999 (UDP) | 9922")
 
-@ray.remote
+
 def HostKeyboard():
     from pynput.keyboard import Key, Controller
 
@@ -56,7 +53,7 @@ def HostKeyboard():
     ClientKeyboardSocket.close()
     HostKeyboardSocket.close()
 
-@ray.remote
+
 def HostScreenCapturing():
     JPEG_QUALITY = 85
     MAX_FPS = 30
@@ -104,7 +101,7 @@ def HostScreenCapturing():
 
     sock.close()
 
-@ray.remote
+
 def HostMouseCourseControlling():
     from pynput.mouse import Button, Controller
 
@@ -175,4 +172,10 @@ def HostMouseCourseControlling():
     Mouse_Coruse_Client_Socket.close()
     Mouse_Coruse_Server_Socket.close()
 
-ray.get([HostKeyboard.remote(), HostScreenCapturing.remote(), HostMouseCourseControlling.remote()])
+
+# Keyboard and mouse as background threads
+Thread(target=HostKeyboard, daemon=True).start()
+Thread(target=HostMouseCourseControlling, daemon=True).start()
+
+# Screen capture in main thread
+HostScreenCapturing()

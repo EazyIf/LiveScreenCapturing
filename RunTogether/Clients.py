@@ -3,8 +3,9 @@ import socket
 import cv2
 import numpy as np
 import pyautogui
-import ray
 import struct
+import time
+from threading import Thread
 from pynput import keyboard
 
 IS_WINDOWS = sys.platform == "win32"
@@ -13,20 +14,19 @@ if IS_WINDOWS:
     import pyWinhook
     import pythoncom
 
-ray.init()
+HOST_IP = '192.168.50.231'
 
-@ray.remote
+
 def ClientKeyboard():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    IP = '192.168.50.231'
-    PORT = 1223
-    client_socket.connect((IP, PORT))
+    client_socket.connect((HOST_IP, 1223))
+    print("Keyboard connected")
 
-    def OnPress(key):   
+    def OnPress(key):
         prr = f'press.{key}'
         if client_socket:
             client_socket.send(prr.encode())
-        
+
     def OnRelease(key):
         rls = f'release.{key}'
         if client_socket:
@@ -38,37 +38,69 @@ def ClientKeyboard():
     def OnKeyboardEvent(event):
         return False
 
-    def RunClient():
-        if IS_WINDOWS:
-            hook_manager = pyWinhook.HookManager()
-            hook_manager.KeyDown = OnKeyboardEvent
-            hook_manager.HookKeyboard()
+    if IS_WINDOWS:
+        hook_manager = pyWinhook.HookManager()
+        hook_manager.KeyDown = OnKeyboardEvent
+        hook_manager.HookKeyboard()
 
-        listener = keyboard.Listener(on_press=OnPress,on_release=OnRelease)
-        listener.start()
+    listener = keyboard.Listener(on_press=OnPress, on_release=OnRelease)
+    listener.start()
 
-        if IS_WINDOWS:
-            try:
-                pythoncom.PumpMessages()
-            except KeyboardInterrupt:
-                pass
-            hook_manager.UnhookKeyboard()
+    if IS_WINDOWS:
+        try:
+            pythoncom.PumpMessages()
+        except KeyboardInterrupt:
+            pass
+        hook_manager.UnhookKeyboard()
+    else:
+        try:
+            listener.join()
+        except KeyboardInterrupt:
+            pass
+
+    client_socket.close()
+
+
+def ClientMouseCourseControlling():
+    from pynput.mouse import Controller, Listener
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((HOST_IP, 9922))
+    print("Mouse connected")
+
+    screen_width, screen_height = pyautogui.size()
+    middle_x = screen_width // 2
+    middle_y = screen_height // 2
+    mouse = Controller()
+    mouse.position = (middle_x, middle_y)
+
+    def send_event(event):
+        client_socket.send((event + '\n').encode())
+
+    def on_mouse_event(x, y, button, pressed):
+        if pressed:
+            send_event(f"PRESS {button} {x} {y}")
         else:
-            try:
-                listener.join()
-            except KeyboardInterrupt:
-                pass
+            send_event(f"RELEASE {button} {x} {y}")
 
-        client_socket.close()
+    listener = Listener(on_click=on_mouse_event)
+    listener.start()
+    prev_x, prev_y = mouse.position
 
     try:
-        RunClient()
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        while True:
+            x, y = mouse.position
+            if x != prev_x or y != prev_y:
+                send_event(f"MOVE {x} {y}")
+                prev_x, prev_y = x, y
+            time.sleep(0.01)
+    except KeyboardInterrupt:
+        listener.stop()
 
-@ray.remote
+    client_socket.close()
+
+
 def ClientScreenCapturing():
-    HOST_IP = '192.168.50.231'  # Paste your server IP address here
+    """Runs in the main thread — cv2.imshow requires it on Linux."""
     BUFFER_SIZE = 65535
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -127,45 +159,11 @@ def ClientScreenCapturing():
 
     cv2.destroyAllWindows()
     sock.close()
-    
-@ray.remote
-def ClientMouseCourseControlling():
-    from pynput.mouse import Controller, Listener
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('192.168.50.231', 9922)
-    client_socket.connect(server_address)
-    
-    screen_width, screen_height = pyautogui.size()
-    middle_x = screen_width // 2
-    middle_y = screen_height // 2
-    mouse = Controller()
-    mouse.position = (middle_x, middle_y)
-    
-    def send_event(event):
-        client_socket.send(event.encode())
-    
-    def on_mouse_event(x, y, button, pressed):
-        if pressed:
-            event = f"PRESS {button} {x} {y}"
-            send_event(event)
-        else:
-            event = f"RELEASE {button} {x} {y}"
-            send_event(event)
-    listener = Listener(on_click=on_mouse_event)
-    listener.start()
-    prev_x, prev_y = mouse.position
-    
-    try:
-        while True:
-            x, y = mouse.position
-    
-            if x != prev_x or y != prev_y:
-                event = f"MOVE {x} {y}"
-                send_event(event)
-                prev_x, prev_y = x, y
-    except KeyboardInterrupt:
-        listener.stop()
-    
-    client_socket.close()
 
-ray.get([ClientKeyboard.remote(), ClientScreenCapturing.remote(), ClientMouseCourseControlling.remote()])
+
+# Keyboard and mouse run as background threads
+Thread(target=ClientKeyboard, daemon=True).start()
+Thread(target=ClientMouseCourseControlling, daemon=True).start()
+
+# Screen capture MUST run in the main thread (cv2.imshow requirement on Linux)
+ClientScreenCapturing()

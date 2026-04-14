@@ -2,7 +2,6 @@ import socket
 import cv2
 import numpy as np
 from mss import mss
-import socket
 import pyautogui
 from threading import Thread
 import ray
@@ -11,14 +10,25 @@ import time
 
 ray.init()
 
-host_name  = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
+
+def get_local_ip():
+    """Get LAN IP address (works on both Windows and Linux)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return socket.gethostbyname(socket.gethostname())
+
+
+host_ip = get_local_ip()
 print(f"[*] Listening as {host_ip} : 1223,|:|, 9999 (UDP)|:|, 9922")
 
 @ray.remote
 def HostKeyboard():
     from pynput.keyboard import Key, Controller
-    import keyboard
 
     keyboard = Controller()
     HostKeyboardSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

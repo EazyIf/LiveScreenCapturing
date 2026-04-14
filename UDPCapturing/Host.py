@@ -12,10 +12,22 @@ UDP_PORT = 9999
 CHUNK_SIZE = 60000      # Max payload per UDP packet (bytes)
 # ───────────────────────────────────────────────────────────────────
 
+
+def get_local_ip():
+    """Get LAN IP address (works on both Windows and Linux)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return socket.gethostbyname(socket.gethostname())
+
+
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    host_name = socket.gethostname()
-    host_ip = socket.gethostbyname(host_name)
+    host_ip = get_local_ip()
 
     sock.bind((host_ip, UDP_PORT))
     print(f"HOST IP: {host_ip}")

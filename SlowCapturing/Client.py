@@ -2,14 +2,11 @@ import socket
 import cv2
 import pickle
 import struct
-from mss import mss
-from PIL import Image
 import numpy as np
-import ctypes
+import pyautogui
 
-user32 = ctypes.windll.user32
-win_x, win_y = [user32.GetSystemMetrics(0), user32.GetSystemMetrics(1)] 
-win_cnt_x, win_cnt_y = [user32.GetSystemMetrics(0)/2, user32.GetSystemMetrics(1)/2]
+win_x, win_y = pyautogui.size()
+win_cnt_x, win_cnt_y = win_x // 2, win_y // 2
 
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host_ip = '' #paste your server ip address here

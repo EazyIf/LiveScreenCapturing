@@ -2,9 +2,21 @@ import socket
 from pynput.mouse import Button, Controller
 import pyautogui
 
+
+def get_local_ip():
+    """Get LAN IP address (works on both Windows and Linux)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return socket.gethostbyname(socket.gethostname())
+
+
 server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host_name  = socket.gethostname()
-host_ip = socket.gethostbyname(host_name)
+host_ip = get_local_ip()
 print('HOST IP:',host_ip)
 port = 9999
 server_address = (host_ip,port)

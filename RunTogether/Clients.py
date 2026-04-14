@@ -1,12 +1,17 @@
+import sys
 import socket
 import cv2
 import numpy as np
 import pyautogui
 import ray
 import struct
-import pyWinhook
-import pythoncom
 from pynput import keyboard
+
+IS_WINDOWS = sys.platform == "win32"
+
+if IS_WINDOWS:
+    import pyWinhook
+    import pythoncom
 
 ray.init()
 
@@ -34,25 +39,32 @@ def ClientKeyboard():
         return False
 
     def RunClient():
-        hook_manager = pyWinhook.HookManager()
-        hook_manager.KeyDown = OnKeyboardEvent
-        hook_manager.HookKeyboard()
+        if IS_WINDOWS:
+            hook_manager = pyWinhook.HookManager()
+            hook_manager.KeyDown = OnKeyboardEvent
+            hook_manager.HookKeyboard()
+
         listener = keyboard.Listener(on_press=OnPress,on_release=OnRelease)
         listener.start()
 
-        try:
-            pythoncom.PumpMessages()
-        except KeyboardInterrupt:
-            pass
+        if IS_WINDOWS:
+            try:
+                pythoncom.PumpMessages()
+            except KeyboardInterrupt:
+                pass
+            hook_manager.UnhookKeyboard()
+        else:
+            try:
+                listener.join()
+            except KeyboardInterrupt:
+                pass
 
-        hook_manager.UnhookKeyboard()
         client_socket.close()
 
-    if __name__ == "__main__":
-        try:
-            RunClient()
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
+    try:
+        RunClient()
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
 
 @ray.remote
 def ClientScreenCapturing():

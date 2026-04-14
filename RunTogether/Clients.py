@@ -1,11 +1,9 @@
 import socket
 import cv2
-from mss import mss
-from PIL import Image
 import numpy as np
 import pyautogui
 import ray
-import zlib
+import struct
 import pyWinhook
 import pythoncom
 from pynput import keyboard
@@ -58,40 +56,65 @@ def ClientKeyboard():
 
 @ray.remote
 def ClientScreenCapturing():
+    HOST_IP = '192.168.1.120'  # Paste your server IP address here
+    BUFFER_SIZE = 65535
 
-    ClientScreenCapturingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    HostScreenCapturingIP = '192.168.1.120' # Paste your server IP address here
-    HostScreenCapturingPORT = 9999
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4 * 1024 * 1024)
 
-    ClientScreenCapturingSocket.connect((HostScreenCapturingIP, HostScreenCapturingPORT))
-    screen_width, screen_height = pyautogui.size()
-    frame_size = (screen_width, screen_height)
-    frame_size = 0
-    frame_data = b""
+    sock.sendto(b"hello", (HOST_IP, 9999))
+    print(f"Screen capture (UDP) connecting to {HOST_IP}:9999...")
+
+    dim_data, _ = sock.recvfrom(1024)
+    width, height = struct.unpack("!HH", dim_data)
+    print(f"Host screen: {width}x{height}")
+
+    sock.settimeout(5.0)
+
+    frames = {}
+    last_displayed_seq = -1
 
     while True:
-        size_data = ClientScreenCapturingSocket.recv(4)
-        if not size_data:
-            break
-        frame_size = int.from_bytes(size_data, 'big')
+        try:
+            packet, _ = sock.recvfrom(BUFFER_SIZE)
+        except socket.timeout:
+            continue
+        except socket.error:
+            continue
 
-        while len(frame_data) < frame_size:
-            data = ClientScreenCapturingSocket.recv(frame_size - len(frame_data))
-            if not data:
-                break
-            frame_data += data
+        if len(packet) < 8:
+            continue
 
-        decompressed_frame = zlib.decompress(frame_data)
-        frame = np.frombuffer(decompressed_frame, dtype=np.uint8).reshape((screen_height, screen_width, 3))
-        cv2.namedWindow("RECEIVING VIDEO", cv2.WINDOW_NORMAL)
-        cv2.setWindowProperty("RECEIVING VIDEO", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        cv2.imshow("RECEIVING VIDEO", frame)
-        frame_data = b""
-        if cv2.waitKey(1) == 35:
+        frame_seq, chunk_idx, total_chunks = struct.unpack("!IHH", packet[:8])
+        chunk_data = packet[8:]
+
+        if frame_seq <= last_displayed_seq:
+            continue
+
+        if frame_seq not in frames:
+            frames[frame_seq] = {}
+        frames[frame_seq][chunk_idx] = chunk_data
+
+        if len(frames[frame_seq]) == total_chunks:
+            frame_data = b"".join(frames[frame_seq][i] for i in range(total_chunks))
+            frame = cv2.imdecode(
+                np.frombuffer(frame_data, dtype=np.uint8),
+                cv2.IMREAD_COLOR,
+            )
+
+            if frame is not None:
+                cv2.namedWindow("RECEIVING VIDEO", cv2.WINDOW_NORMAL)
+                cv2.setWindowProperty("RECEIVING VIDEO", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                cv2.imshow("RECEIVING VIDEO", frame)
+
+            last_displayed_seq = frame_seq
+            frames = {k: v for k, v in frames.items() if k > frame_seq}
+
+        if cv2.waitKey(1) == ord("q"):
             break
 
     cv2.destroyAllWindows()
-    ClientScreenCapturingSocket.close()
+    sock.close()
     
 @ray.remote
 def ClientMouseCourseControlling():

@@ -6,13 +6,14 @@ import socket
 import pyautogui
 from threading import Thread
 import ray
-import zlib
+import struct
+import time
 
 ray.init()
 
 host_name  = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
-print(f"[*] Listening as {host_ip} : 1223,|:|, 9999|:|, 9922")
+print(f"[*] Listening as {host_ip} : 1223,|:|, 9999 (UDP)|:|, 9922")
 
 @ray.remote
 def HostKeyboard():
@@ -47,41 +48,51 @@ def HostKeyboard():
 
 @ray.remote
 def HostScreenCapturing():
-    HostScreenCapturingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    HostScreenCapturingPort = 9999
+    JPEG_QUALITY = 85
+    MAX_FPS = 30
+    CHUNK_SIZE = 60000
 
-    socket_address = (host_ip,HostScreenCapturingPort)
-    HostScreenCapturingSocket.bind(socket_address)
-    HostScreenCapturingSocket.listen(5)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((host_ip, 9999))
+    print("Screen capture (UDP) waiting for client on port 9999...")
 
-    ClientScreenCapturingSocket, ClientScreenCapturingAddr = HostScreenCapturingSocket.accept()
-    print('GOT CONNECTION FROM:', ClientScreenCapturingAddr)
+    data, client_addr = sock.recvfrom(1024)
+    print(f"Screen client connected from: {client_addr}")
 
-    screen_width, screen_height = pyautogui.size()
-    frame_size = (screen_width, screen_height)
-    
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output.mp4', fourcc, 15.0, frame_size)
-    
+    sct = mss()
+    monitor = sct.monitors[1]
+    width = monitor["width"]
+    height = monitor["height"]
+    sock.sendto(struct.pack("!HH", width, height), client_addr)
+
+    frame_seq = 0
+    encode_params = [cv2.IMWRITE_JPEG_QUALITY, JPEG_QUALITY]
+
     while True:
-        img = pyautogui.screenshot()
-        frame = np.array(img)
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
-        out.write(frame)
-    
-        encoded_frame = frame.tobytes()
-        compressed_frame = zlib.compress(encoded_frame)
-    
-        frame_size = len(compressed_frame)
-        ClientScreenCapturingSocket.sendall(frame_size.to_bytes(4, 'big') + compressed_frame)
-        if cv2.waitKey(1) == ord('q'):
-            break
-        
-    out.release()
-    cv2.destroyAllWindows()
-    ClientScreenCapturingSocket.close()
-    ClientScreenCapturingSocket.close()
+        start_time = time.time()
+
+        screenshot = sct.grab(monitor)
+        frame = np.array(screenshot)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+        _, encoded = cv2.imencode(".jpg", frame, encode_params)
+        data = encoded.tobytes()
+
+        total_chunks = (len(data) + CHUNK_SIZE - 1) // CHUNK_SIZE
+        for i in range(total_chunks):
+            start = i * CHUNK_SIZE
+            end = min(start + CHUNK_SIZE, len(data))
+            header = struct.pack("!IHH", frame_seq, i, total_chunks)
+            sock.sendto(header + data[start:end], client_addr)
+
+        frame_seq += 1
+
+        elapsed = time.time() - start_time
+        sleep_time = (1.0 / MAX_FPS) - elapsed
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+
+    sock.close()
 
 @ray.remote
 def HostMouseCourseControlling():
